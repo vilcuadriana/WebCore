@@ -23,7 +23,6 @@ Aplicația trebuie să permită studentului organizarea notițelor în funcție 
 - Frontend: React.js (SPA)
 - Backend: Node.js + Express + REST API
 - Bază de date: PostgreSQL + Sequelize (ORM)
-- Versionare cod: Git
 - Posibil deploy pe Azure, AWS sau alt serviciu free-tier
 
 ## Structura proiectului
