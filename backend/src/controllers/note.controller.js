@@ -33,9 +33,17 @@ exports.update = async (req, res) => {
 
   if (!note) return res.sendStatus(404);
 
-  await note.update(req.body);
+  const { title, contentMarkdown, subjectId } = req.body;
+
+  const patch = {};
+  if (title !== undefined) patch.title = title;
+  if (contentMarkdown !== undefined) patch.contentMarkdown = contentMarkdown;
+  if (subjectId !== undefined) patch.SubjectId = subjectId;
+
+  await note.update(patch);
   res.json(note);
 };
+
 
 exports.remove = async (req, res) => {
   await Note.destroy({

@@ -9,6 +9,10 @@ const Note = sequelize.define('Note', {
   contentMarkdown: {
     type: DataTypes.TEXT,
     allowNull: false
+  },
+  UserId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
   }
 });
 
