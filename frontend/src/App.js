@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Notes from "./pages/Notes";
+import Groups from "./pages/Groups";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -23,8 +24,6 @@ export default function App() {
           }
         />
 
-
-        <Route path="*" element={<h2 style={{ padding: 24 }}>404</h2>} />
         <Route
           path="/notes"
           element={
@@ -33,6 +32,17 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/groups"
+          element={
+            <ProtectedRoute>
+              <Groups />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<h2 style={{ padding: 24 }}>404</h2>} />
       </Routes>
     </BrowserRouter>
   );
