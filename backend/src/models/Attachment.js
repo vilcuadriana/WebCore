@@ -1,3 +1,11 @@
+/**
+ * Model Sequelize pentru atașamente.
+ * Reprezintă fișierele (imagini, documente) asociate unei notițe.
+ *
+ * Atașamentele sunt salvate pe disc, iar în baza de date
+ * se păstrează doar metadatele necesare.
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 

@@ -10,33 +10,37 @@ const Import = require('./Import');
 const StudyGroup = require('./StudyGroup');
 const GroupMember = require('./GroupMember');
 
-User.hasMany(Subject);
+/* ===== USER RELATIONS ===== */
+User.hasMany(Subject, { onDelete: 'CASCADE' });
 Subject.belongsTo(User);
 
-User.hasMany(Note);
+User.hasMany(Note, { onDelete: 'CASCADE' });
 Note.belongsTo(User);
 
-User.hasMany(Tag);
+User.hasMany(Tag, { onDelete: 'CASCADE' });
 Tag.belongsTo(User);
 
-User.hasMany(Attachment);
+User.hasMany(Attachment, { onDelete: 'CASCADE' });
 Attachment.belongsTo(User);
 
-User.hasMany(Import);
+User.hasMany(Import, { onDelete: 'CASCADE' });
 Import.belongsTo(User);
 
-Subject.hasMany(Note);
+/* ===== SUBJECT ===== */
+Subject.hasMany(Note, { onDelete: 'SET NULL' });
 Note.belongsTo(Subject);
 
-Note.hasMany(Attachment);
+/* ===== NOTE ===== */
+Note.hasMany(Attachment, { onDelete: 'CASCADE' });
 Attachment.belongsTo(Note);
+
+Note.hasOne(Import, { onDelete: 'CASCADE' });
+Import.belongsTo(Note);
 
 Note.belongsToMany(Tag, { through: 'NoteTags' });
 Tag.belongsToMany(Note, { through: 'NoteTags' });
 
-Note.hasOne(Import);
-Import.belongsTo(Note);
-
+/* ===== SHARING ===== */
 User.belongsToMany(Note, {
   through: NoteShare,
   as: 'SharedNotes',
@@ -46,12 +50,7 @@ Note.belongsToMany(User, {
   as: 'SharedWith',
 });
 
-StudyGroup.hasMany(GroupMember);
-GroupMember.belongsTo(StudyGroup);
-
-User.hasMany(GroupMember);
-GroupMember.belongsTo(User);
-
+/* ===== STUDY GROUPS (CORECT) ===== */
 StudyGroup.belongsToMany(User, { through: GroupMember });
 User.belongsToMany(StudyGroup, { through: GroupMember });
 

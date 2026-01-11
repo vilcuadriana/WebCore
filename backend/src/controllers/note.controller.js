@@ -1,5 +1,26 @@
+/**
+ * Controller pentru gestionarea notițelor.
+ * Oferă funcționalități complete de tip CRUD (Create, Read, Update, Delete),
+ * gestionarea etichetelor (tags) și partajarea notițelor între utilizatori.
+ *
+ * Accesul la notițe este controlat pe baza:
+ *  - proprietății (utilizatorul care a creat notița)
+ *  - permisiunilor acordate prin partajare (view / edit)
+ */
+
 const { Note, Tag, User, NoteShare } = require('../models');
 
+/**
+ * Verifică dacă utilizatorul are acces la o notiță.
+ * Accesul este permis dacă:
+ *  - utilizatorul este proprietarul notiței
+ *  - sau notița este partajată cu acesta
+ *
+ * @param {number} noteId - ID-ul notiței
+ * @param {number} userId - ID-ul utilizatorului autentificat
+ * @param {boolean} requireEdit - indică dacă este necesar drept de editare
+ * @returns {Promise<Note|null>} notița dacă accesul este permis, altfel null
+ */
 async function canAccessNote(noteId, userId, requireEdit = false) {
   const owned = await Note.findOne({
     where: { id: noteId, UserId: userId },
@@ -17,6 +38,10 @@ async function canAccessNote(noteId, userId, requireEdit = false) {
   return null;
 }
 
+/**
+ * Returnează toate notițele create de utilizatorul curent.
+ * Sunt incluse și etichetele asociate fiecărei notițe.
+ */
 exports.getAll = async (req, res) => {
   try {
     const notes = await Note.findAll({
@@ -30,6 +55,9 @@ exports.getAll = async (req, res) => {
   }
 };
 
+/**
+ * Returnează o notiță specifică, dacă utilizatorul are acces la aceasta.
+ */
 exports.getOne = async (req, res) => {
   try {
     const note = await canAccessNote(req.params.id, req.userId);
@@ -42,6 +70,10 @@ exports.getOne = async (req, res) => {
   }
 };
 
+/**
+ * Creează o notiță nouă pentru utilizatorul autentificat.
+ * Notița poate fi asociată opțional unei materii.
+ */
 exports.create = async (req, res) => {
   try {
     const note = await Note.create({
@@ -56,6 +88,11 @@ exports.create = async (req, res) => {
   }
 };
 
+/**
+ * Actualizează o notiță existentă.
+ * Operația este permisă doar proprietarului sau utilizatorilor
+ * care au primit permisiune de editare.
+ */
 exports.update = async (req, res) => {
   try {
     const note = await canAccessNote(req.params.id, req.userId, true);
@@ -72,6 +109,10 @@ exports.update = async (req, res) => {
   }
 };
 
+/**
+ * Șterge o notiță.
+ * Doar proprietarul notiței are dreptul de a efectua această operație.
+ */
 exports.remove = async (req, res) => {
   try {
     const note = await Note.findOne({
@@ -86,6 +127,10 @@ exports.remove = async (req, res) => {
   }
 };
 
+/**
+ * Asociază un set de etichete (tags) unei notițe.
+ * Operația este permisă doar utilizatorilor cu drept de editare.
+ */
 exports.addTags = async (req, res) => {
   try {
     const note = await canAccessNote(req.params.id, req.userId, true);
@@ -102,6 +147,9 @@ exports.addTags = async (req, res) => {
   }
 };
 
+/**
+ * Returnează etichetele asociate unei notițe.
+ */
 exports.getTags = async (req, res) => {
   try {
     const note = await Note.findByPk(req.params.id, { include: [Tag] });
@@ -112,6 +160,9 @@ exports.getTags = async (req, res) => {
   }
 };
 
+/**
+ * Returnează lista notițelor partajate cu utilizatorul curent.
+ */
 exports.getSharedWithMe = async (req, res) => {
   try {
     const notes = await Note.findAll({
@@ -132,6 +183,10 @@ exports.getSharedWithMe = async (req, res) => {
   }
 };
 
+/**
+ * Partajează o notiță cu un alt utilizator.
+ * Se poate specifica nivelul de permisiune (view / edit).
+ */
 exports.share = async (req, res) => {
   try {
     const { email, permission = 'view' } = req.body;

@@ -1,3 +1,11 @@
+/**
+ * Model Sequelize pentru importuri.
+ * Reține informații despre conținutul importat din surse externe
+ * (ex: YouTube, link-uri, text).
+ *
+ * Fiecare import este asociat unei notițe.
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
