@@ -10,7 +10,9 @@ const Import = require('./Import');
 const StudyGroup = require('./StudyGroup');
 const GroupMember = require('./GroupMember');
 
-/* ===== USER RELATIONS ===== */
+/* =========================
+   USER RELATIONS
+========================= */
 User.hasMany(Subject, { onDelete: 'CASCADE' });
 Subject.belongsTo(User);
 
@@ -26,11 +28,15 @@ Attachment.belongsTo(User);
 User.hasMany(Import, { onDelete: 'CASCADE' });
 Import.belongsTo(User);
 
-/* ===== SUBJECT ===== */
+/* =========================
+   SUBJECT
+========================= */
 Subject.hasMany(Note, { onDelete: 'SET NULL' });
 Note.belongsTo(Subject);
 
-/* ===== NOTE ===== */
+/* =========================
+   NOTE
+========================= */
 Note.hasMany(Attachment, { onDelete: 'CASCADE' });
 Attachment.belongsTo(Note);
 
@@ -40,7 +46,9 @@ Import.belongsTo(Note);
 Note.belongsToMany(Tag, { through: 'NoteTags' });
 Tag.belongsToMany(Note, { through: 'NoteTags' });
 
-/* ===== SHARING ===== */
+/* =========================
+   SHARING
+========================= */
 User.belongsToMany(Note, {
   through: NoteShare,
   as: 'SharedNotes',
@@ -50,9 +58,38 @@ Note.belongsToMany(User, {
   as: 'SharedWith',
 });
 
-/* ===== STUDY GROUPS (CORECT) ===== */
+/* =========================
+   STUDY GROUPS (FIX CORECT)
+========================= */
+
+/**
+ * Relație many-to-many User ↔ StudyGroup
+ * prin tabela intermediară GroupMember
+ */
 StudyGroup.belongsToMany(User, { through: GroupMember });
 User.belongsToMany(StudyGroup, { through: GroupMember });
+
+/**
+ * Relații directe NECESARE pentru Sequelize include
+ * (rezolvă EagerLoadingError)
+ */
+StudyGroup.hasMany(GroupMember, {
+  foreignKey: 'StudyGroupId',
+  onDelete: 'CASCADE',
+});
+
+GroupMember.belongsTo(StudyGroup, {
+  foreignKey: 'StudyGroupId',
+});
+
+User.hasMany(GroupMember, {
+  foreignKey: 'UserId',
+  onDelete: 'CASCADE',
+});
+
+GroupMember.belongsTo(User, {
+  foreignKey: 'UserId',
+});
 
 module.exports = {
   sequelize,

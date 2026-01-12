@@ -10,7 +10,12 @@
  * și partajarea informațiilor între studenți.
  */
 
-const { StudyGroup, GroupMember, User } = require('../models');
+const {
+  StudyGroup,
+  GroupMember,
+  Note,
+  User,
+} = require('../models');
 
 /**
  * Creează un grup de studiu nou.
@@ -102,5 +107,97 @@ exports.getMembers = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Eroare membri' });
+  }
+};
+
+
+/**
+ * Returnează notițele tuturor membrilor unui grup.
+ */
+exports.getGroupNotes = async (req, res) => {
+  try {
+    // 1️⃣ Găsim membrii grupului
+    const members = await GroupMember.findAll({
+      where: { StudyGroupId: req.params.id },
+      attributes: ['UserId'],
+    });
+
+    const userIds = members.map(m => m.UserId);
+
+    // 2️⃣ Găsim notițele create de acești utilizatori
+    const notes = await Note.findAll({
+      where: {
+        UserId: userIds,
+      },
+      include: {
+        model: User,
+        attributes: ['id', 'fullName', 'email'],
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.json(notes);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Eroare notițe grup' });
+  }
+};
+/**
+ * Returnează detaliile unui grup
+ * DOAR dacă utilizatorul este membru.
+ */
+exports.getGroupById = async (req, res) => {
+  try {
+    const member = await GroupMember.findOne({
+      where: {
+        StudyGroupId: req.params.id,
+        UserId: req.userId,
+      },
+    });
+
+    if (!member) {
+      return res.status(403).json({ message: 'Nu faci parte din acest grup' });
+    }
+
+    const group = await StudyGroup.findByPk(req.params.id);
+    if (!group) {
+      return res.status(404).json({ message: 'Grup inexistent' });
+    }
+
+    res.json(group);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Eroare grup' });
+  }
+};
+
+/**
+ * Șterge un grup de studiu.
+ * Doar owner-ul are acest drept.
+ */
+exports.deleteGroup = async (req, res) => {
+  try {
+    const owner = await GroupMember.findOne({
+      where: {
+        StudyGroupId: req.params.id,
+        UserId: req.userId,
+        role: 'owner',
+      },
+    });
+
+    if (!owner) {
+      return res.status(403).json({
+        message: 'Nu ai dreptul să ștergi acest grup',
+      });
+    }
+
+    await StudyGroup.destroy({
+      where: { id: req.params.id },
+    });
+
+    res.sendStatus(204);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Eroare ștergere grup' });
   }
 };

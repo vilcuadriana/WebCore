@@ -1,54 +1,104 @@
 import { useEffect, useState } from "react";
-import { api } from "../api/API";
 import { useNavigate } from "react-router-dom";
+import { api } from "../api/API";
+import MainLayout from "../components/MainLayout";
 
+/**
+ * Componenta Groups
+ * Permite utilizatorului autentificat să:
+ *  - vadă grupurile din care face parte
+ *  - creeze un grup nou
+ *  - intre într-un grup prin click
+ */
 export default function Groups() {
+  // Lista grupurilor utilizatorului
   const [groups, setGroups] = useState([]);
+
+  // Pentru navigare către pagina unui grup
   const navigate = useNavigate();
 
-  const load = async () => {
-    const { data } = await api.get("/groups");
-    setGroups(data);
+  /**
+   * Încarcă grupurile utilizatorului din backend
+   */
+  const loadGroups = async () => {
+    try {
+      const { data } = await api.get("/groups");
+      setGroups(data);
+    } catch (error) {
+      console.error("Eroare la încărcarea grupurilor", error);
+    }
   };
 
+  /**
+   * Creează un grup nou
+   * Backend-ul așteaptă: { name }
+   */
   const createGroup = async () => {
-    const name = prompt("Nume grup");
-    if (!name) return;
+    const name = prompt("Introdu numele grupului de studiu");
+    if (!name || !name.trim()) return;
 
-    await api.post("/groups", { name });
-    load();
+    try {
+      // Creează grupul
+      const { data: group } = await api.post("/groups", {
+        name: name.trim(),
+      });
+
+      // Întreabă dacă vrea să invite pe cineva
+      const invite = window.confirm(
+        "Grup creat cu succes. Vrei să inviți un coleg?"
+      );
+
+      if (invite) {
+        const email = prompt("Introdu email-ul colegului (@stud.ase.ro)");
+        if (email && email.trim()) {
+          await api.post(`/groups/${group.id}/invite`, {
+            email: email.trim().toLowerCase(),
+          });
+          alert("Invitație trimisă");
+        }
+      }
+
+      // Reîncarcă lista grupurilor
+      loadGroups();
+    } catch (error) {
+      console.error("Eroare la crearea grupului", error);
+      alert("Eroare la crearea grupului");
+    }
   };
 
-  const invite = async (groupId) => {
-    const email = prompt("Email coleg (@stud.ase.ro)");
-    if (!email) return;
-
-    await api.post(`/groups/${groupId}/invite`, { email });
-    alert("Invitație trimisă");
-  };
-
+  // Se apelează la montarea componentei
   useEffect(() => {
-    load();
+    loadGroups();
   }, []);
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2>Grupurile mele</h2>
+    <MainLayout title="👥 Grupurile mele">
+      {/* Card pentru acțiuni */}
+      <div className="card">
+        <button onClick={createGroup}>➕ Creează grup</button>
+      </div>
 
-      <button onClick={createGroup}>Creează grup</button>
-      <button onClick={() => navigate("/dashboard")} style={{ marginLeft: 8 }}>
-        Înapoi
-      </button>
+      {/* Afișare grupuri */}
+      <div className="grid">
+        {groups.map((g) => (
+          <div
+            className="action-card"
+            key={g.id}
+            onClick={() => navigate(`/groups/${g.id}`)}
+            style={{ cursor: "pointer" }}
+          >
+            <h3>{g.name}</h3>
+            <p>Grup de studiu colaborativ</p>
+          </div>
+        ))}
+      </div>
 
-      <hr />
-
-      {groups.map((g) => (
-        <div key={g.id} style={{ border: "1px solid #ccc", padding: 10, marginBottom: 10 }}>
-          <b>{g.name}</b>
-          <br />
-          <button onClick={() => invite(g.id)}>Invită membru</button>
-        </div>
-      ))}
-    </div>
+      {/* Mesaj dacă nu există grupuri */}
+      {groups.length === 0 && (
+        <p className="text-muted">
+          Nu faci parte din niciun grup de studiu.
+        </p>
+      )}
+    </MainLayout>
   );
 }

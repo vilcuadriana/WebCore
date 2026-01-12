@@ -4,17 +4,21 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Notes from "./pages/Notes";
 import Groups from "./pages/Groups";
+import GroupDetails from "./pages/GroupDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Redirect implicit */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
+        {/* Public */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
+        {/* Protejate */}
         <Route
           path="/dashboard"
           element={
@@ -42,6 +46,17 @@ export default function App() {
           }
         />
 
+        {/* 🔥 RUTA CARE LIPSEA */}
+        <Route
+          path="/groups/:id"
+          element={
+            <ProtectedRoute>
+              <GroupDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback */}
         <Route path="*" element={<h2 style={{ padding: 24 }}>404</h2>} />
       </Routes>
     </BrowserRouter>
