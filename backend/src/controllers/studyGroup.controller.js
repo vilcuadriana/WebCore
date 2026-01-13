@@ -111,28 +111,34 @@ exports.getMembers = async (req, res) => {
 };
 
 
+
 /**
- * Returnează notițele tuturor membrilor unui grup.
+ * Returnează DOAR notițele partajate în grup.
  */
 exports.getGroupNotes = async (req, res) => {
   try {
-    // 1️⃣ Găsim membrii grupului
+    // 1️⃣ Membrii grupului
     const members = await GroupMember.findAll({
       where: { StudyGroupId: req.params.id },
       attributes: ['UserId'],
     });
 
-    const userIds = members.map(m => m.UserId);
+    const memberIds = members.map(m => m.UserId);
 
-    // 2️⃣ Găsim notițele create de acești utilizatori
+    // 2️⃣ Notițe care sunt partajate cu cel puțin un membru din grup
     const notes = await Note.findAll({
-      where: {
-        UserId: userIds,
-      },
-      include: {
-        model: User,
-        attributes: ['id', 'fullName', 'email'],
-      },
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'fullName'],
+        },
+        {
+          model: User,
+          as: 'SharedWith',
+          where: { id: memberIds },
+          through: { attributes: [] },
+        },
+      ],
       order: [['createdAt', 'DESC']],
     });
 
@@ -142,6 +148,7 @@ exports.getGroupNotes = async (req, res) => {
     res.status(500).json({ message: 'Eroare notițe grup' });
   }
 };
+
 /**
  * Returnează detaliile unui grup
  * DOAR dacă utilizatorul este membru.

@@ -183,21 +183,23 @@ exports.getSharedWithMe = async (req, res) => {
   }
 };
 
-/**
- * Partajează o notiță cu un alt utilizator.
- * Se poate specifica nivelul de permisiune (view / edit).
- */
 exports.share = async (req, res) => {
   try {
-    const { email, permission = 'view' } = req.body;
+    const { email, permission = "view" } = req.body;
 
+    // găsim notița (doar owner-ul poate partaja)
     const note = await Note.findOne({
       where: { id: req.params.id, UserId: req.userId },
     });
-    if (!note) return res.sendStatus(404);
+    if (!note) return res.sendStatus(403);
 
     const user = await User.findOne({ where: { email } });
     if (!user) return res.sendStatus(404);
+
+    // ⛔ NU partajăm cu creatorul
+    if (user.id === req.userId) {
+      return res.json({ message: "Owner implicit" });
+    }
 
     await NoteShare.findOrCreate({
       where: {
@@ -207,8 +209,9 @@ exports.share = async (req, res) => {
       defaults: { permission },
     });
 
-    res.json({ message: 'ok' });
-  } catch {
+    res.json({ message: "ok" });
+  } catch (err) {
+    console.error(err);
     res.sendStatus(500);
   }
 };

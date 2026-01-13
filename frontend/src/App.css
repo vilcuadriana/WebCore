@@ -271,3 +271,19 @@ select:focus {
 .text-muted {
   color: #6b7280;
 }
+.markdown-preview {
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 12px;
+  line-height: 1.6;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3 {
+  margin-top: 16px;
+}
+
+.markdown-preview ul {
+  padding-left: 20px;
+}
