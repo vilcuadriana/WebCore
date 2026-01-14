@@ -104,3 +104,41 @@ exports.remove = async (req, res) => {
   await imp.destroy();
   res.sendStatus(204);
 };
+exports.createForNote = async (req, res) => {
+  try {
+    const { url, rawText } = req.body;
+    const { noteId } = req.params;
+
+    // 1️⃣ Verificăm notița
+    const note = await Note.findOne({
+      where: { id: noteId, UserId: req.userId },
+    });
+
+    if (!note) {
+      return res.status(404).json({ message: 'Notiță inexistentă' });
+    }
+
+    // 2️⃣ Detectăm tipul
+    const type = detectType(url);
+    let meta = null;
+
+    if (type === 'youtube' && url) {
+      meta = await getYoutubeOembed(url);
+    }
+
+    // 3️⃣ Creăm DOAR importul (NU notiță)
+    const imp = await Import.create({
+      type,
+      url: url || null,
+      rawText: rawText || null,
+      metadata: meta,
+      UserId: req.userId,
+      NoteId: note.id,
+    });
+
+    res.status(201).json(imp);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Eroare import' });
+  }
+};

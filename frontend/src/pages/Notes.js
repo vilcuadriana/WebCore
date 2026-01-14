@@ -24,7 +24,8 @@ import {
   getImportsForNote,
   deleteImport,
 } from "../api/importApi";
-
+// SHARE
+import { shareNote } from "../api/sharedApi";
 
   export default function Notes() {
   /* ===================== STATE ===================== */
@@ -50,7 +51,7 @@ import {
   const [search, setSearch] = useState("");
   const [filterSubject, setFilterSubject] = useState("");
   const [filterTags, setFilterTags] = useState([]);
-
+const [filterDate, setFilterDate] = useState("");
   // upload / import
   const [file, setFile] = useState(null);
   const [importUrl, setImportUrl] = useState("");
@@ -77,33 +78,41 @@ import {
 
       /* ===================== CRUD ===================== */
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!title.trim()) return;
+ const submit = async (e) => {
+  e.preventDefault();
+  if (!title.trim()) return;
 
-    let noteId;
+  if (editingId) {
+    // ✏️ EDITARE
+    await api.put(`/notes/${editingId}`, {
+      title,
+      contentMarkdown,
+      subjectId: subjectId || null,
+    });
 
-    if (editingId) {
-      await api.put(`/notes/${editingId}`, {
-        title,
-        contentMarkdown,
-        subjectId: subjectId || null,
-      });
-      noteId = editingId;
-    } else {
-      const { data } = await api.post("/notes", {
-        title,
-        contentMarkdown,
-        subjectId: subjectId || null,
-      });
-      noteId = data.id;
-    }
+    await setTagsForNote(editingId, selectedTags);
 
-    await setTagsForNote(noteId, selectedTags);
-
-    resetForm();
     loadNotes();
-  };
+    resetForm(); // ← DOAR la editare închidem
+  } else {
+    // ➕ CREARE
+    const { data } = await api.post("/notes", {
+      title,
+      contentMarkdown,
+      subjectId: subjectId || null,
+    });
+
+    await setTagsForNote(data.id, selectedTags);
+
+    // 🔥 CHEIA
+    setEditingId(data.id); // intrăm automat în edit
+    setShowForm(true);     // formularul rămâne deschis
+    loadNotes();
+  }
+};
+
+
+
 
   const startCreate = () => {
     resetForm();
@@ -130,6 +139,23 @@ import {
     await api.delete(`/notes/${id}`);
     loadNotes();
   };
+  const handleShare = async (noteId) => {
+  const email = prompt("Email coleg (@stud.ase.ro)");
+  if (!email) return;
+
+  const permission = window.confirm(
+    "Vrei ca acest coleg să poată EDITA notița?"
+  )
+    ? "edit"
+    : "view";
+
+  try {
+    await shareNote(noteId, email, permission);
+    alert("Notița a fost partajată cu succes");
+  } catch (err) {
+    alert("Eroare la partajare");
+  }
+};
 
   const resetForm = () => {
     setEditingId(null);
@@ -184,6 +210,7 @@ import {
   const handleImportHandler = async () => {
     if (!importUrl || !editingId) return;
 
+
     let type = "link";
     if (importUrl.includes("youtube")) type = "youtube";
     if (importUrl.toLowerCase().endsWith(".pdf")) type = "pdf";
@@ -192,24 +219,62 @@ import {
     setImports(await getImportsForNote(editingId));
     setImportUrl("");
   };
+  // 🔽 RENDER IMPORT (YouTube / PDF / Link)
+const renderImport = (imp) => {
+  if (imp.type === "youtube") {
+    const videoId =
+      imp.url.split("v=")[1]?.split("&")[0] ||
+      imp.url.split("youtu.be/")[1];
+
+    return (
+      <iframe
+        width="100%"
+        height="315"
+        src={`https://www.youtube.com/embed/${videoId}`}
+        title="YouTube video"
+        frameBorder="0"
+        allowFullScreen
+      />
+    );
+  }
+
+  if (imp.type === "pdf") {
+    return (
+      <a href={imp.url} target="_blank" rel="noreferrer">
+        📄 Deschide PDF
+      </a>
+    );
+  }
+
+  return (
+    <a href={imp.url} target="_blank" rel="noreferrer">
+      🔗 {imp.url}
+    </a>
+  );
+};
+
     /* ===================== FILTER ===================== */
 
   const filteredNotes = notes.filter((n) => {
-    const textMatch =
-      n.title.toLowerCase().includes(search.toLowerCase()) ||
-      n.contentMarkdown.toLowerCase().includes(search.toLowerCase());
+  const textMatch =
+    n.title.toLowerCase().includes(search.toLowerCase()) ||
+    n.contentMarkdown.toLowerCase().includes(search.toLowerCase());
 
-    const subjectMatch = filterSubject
-      ? n.SubjectId === Number(filterSubject)
+  const subjectMatch = filterSubject
+    ? n.SubjectId === Number(filterSubject)
+    : true;
+
+  const tagMatch =
+    filterTags.length > 0
+      ? n.Tags?.some((t) => filterTags.includes(t.id))
       : true;
 
-    const tagMatch =
-      filterTags.length > 0
-        ? n.Tags?.some((t) => filterTags.includes(t.id))
-        : true;
+  const dateMatch = filterDate
+    ? n.createdAt.slice(0, 10) === filterDate
+    : true;
 
-    return textMatch && subjectMatch && tagMatch;
-  });
+  return textMatch && subjectMatch && tagMatch && dateMatch;
+});
 
     /* ===================== EFFECT ===================== */
 
@@ -233,9 +298,9 @@ import {
   </div>
 
   {!showForm && (
-    <button onClick={() => setShowForm(true)}>
-      ➕ Creează notiță
-    </button>
+    <button onClick={startCreate}>
+  ➕ Creează notiță
+</button>
   )}
 </div>
 {/* 🟨 ZONA 2 – FILTRARE */}
@@ -258,6 +323,13 @@ import {
         </option>
       ))}
     </select>
+    {/* 📅 FILTRARE DATĂ */}
+    <input
+      type="date"
+      value={filterDate}
+      onChange={(e) => setFilterDate(e.target.value)}
+    />
+
 
     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
       {tags.map((t) => {
@@ -376,6 +448,20 @@ import {
           <ReactMarkdown>{contentMarkdown}</ReactMarkdown>
         </div>
       )}
+      {imports.length > 0 && (
+  <div style={{ marginTop: "24px" }}>
+    <h4>🔗 Surse externe</h4>
+
+    <div style={{ display: "grid", gap: "16px" }}>
+      {imports.map((imp) => (
+        <div key={imp.id}>
+          {renderImport(imp)}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
 
       <div style={{ display: "flex", gap: "12px" }}>
         <button type="submit">💾 Salvează</button>
@@ -457,16 +543,30 @@ import {
         {n.contentMarkdown.slice(0, 120)}
         {n.contentMarkdown.length > 120 && "..."}
       </p>
+      {n.Imports?.length > 0 && (
+  <small className="text-muted">
+    🔗 {n.Imports.length} surse externe
+  </small>
+)}
 
       <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-        <button onClick={() => startEdit(n)}>✏️</button>
-        <button
-          className="secondary"
-          onClick={() => deleteNote(n.id)}
-        >
-          🗑
-        </button>
-      </div>
+  <button onClick={() => startEdit(n)}>✏️</button>
+
+  <button
+    className="secondary"
+    onClick={() => deleteNote(n.id)}
+  >
+    🗑
+  </button>
+
+  <button
+    className="secondary"
+    onClick={() => handleShare(n.id)}
+  >
+    👥 Partajează
+  </button>
+</div>
+
     </div>
   ))}
 </div>

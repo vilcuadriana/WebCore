@@ -1,28 +1,16 @@
 import { api } from "./API";
 
-/**
- * Creează un import (YouTube / link / text)
- */
-export const addImport = async ({ url, rawText, subjectId }) => {
-  const { data } = await api.post("/imports", {
+export const addImport = async (noteId, url, type) => {
+  await api.post(`/imports/note/${noteId}`, {
     url,
-    rawText,
-    subjectId,
   });
-  return data;
 };
 
-/**
- * Importuri pentru o notiță
- */
 export const getImportsForNote = async (noteId) => {
   const { data } = await api.get(`/imports/note/${noteId}`);
   return data;
 };
 
-/**
- * Ștergere import
- */
 export const deleteImport = async (id) => {
   await api.delete(`/imports/${id}`);
 };

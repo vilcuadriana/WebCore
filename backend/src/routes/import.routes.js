@@ -4,16 +4,17 @@ const auth = require('../middlewares/auth.middleware');
 
 router.use(auth);
 
-// creare import (YouTube / link / text)
-router.post('/', controller.create);
 
-// toate importurile utilizatorului
-router.get('/', controller.getAll);
+// 🔹 import atașat la o notiță EXISTENTĂ  ✅
+router.post('/note/:noteId', controller.createForNote);
 
-// importurile pentru o notiță
+// 🔹 importuri pentru o notiță
 router.get('/note/:noteId', controller.getForNote);
 
-// ștergere import
+// 🔹 toate importurile utilizatorului
+router.get('/', controller.getAll);
+
+// 🔹 ștergere import
 router.delete('/:id', controller.remove);
 
 module.exports = router;
